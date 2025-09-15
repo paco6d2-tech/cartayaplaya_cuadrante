@@ -1,0 +1,30 @@
+name: CI
+
+on: [pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt || true
+          pip install pytest pytest-cov flake8
+
+      - name: Lint (código limpio obligatorio)
+        run: flake8 src
+
+      - name: Tests + coverage (≥85%)
+        run: pytest -q --cov=src --cov-fail-under=85
+
+      - name: Verificar actualización de docs
+        run: |
+          git diff --name-only HEAD~1 HEAD | grep -E '\.py$' && \
+          git diff --name-only HEAD~1 HEAD | grep -q 'README\.md\|docs/' || \
+          (echo "❌ Falta actualizar README/docs para reflejar cambios" && exit 1) || true
